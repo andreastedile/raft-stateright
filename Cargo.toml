@@ -5,6 +5,12 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[[bin]]
+name = "raft-sr"
+path = "src/checker/main.rs"
+
 [dependencies]
 stateright = { git = "https://github.com/stateright/stateright" }
 itertools = "0.10.5"
+clap = { version = "4.2.4", features = ["derive"] }
+num_cpus = "1.15.0"
