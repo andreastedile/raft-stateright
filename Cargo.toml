@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 stateright = { git = "https://github.com/stateright/stateright" }
+itertools = "0.10.5"
