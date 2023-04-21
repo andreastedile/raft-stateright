@@ -24,6 +24,18 @@ impl RaftModelCfg {
             }))
             .init_network(self.network)
             .lossy_network(self.lossy_network)
+            .within_boundary(|cfg, ams| {
+                // Stateright can make actors timeout an unbounded amount of times.
+                // For example, it can indefinitely prevent servers from electing a leader by repeatedly timing out candidates.
+                // Unfortunately, by doing so, stateright also explores endless and uninteresting paths where the servers hardly make progress.
+                // Therefore, we put a bound on the term that servers can reach.
+
+                // Also see Ongaro's PhD thesis, Chapter 9:
+                // According to the FLP impossibility result [28], no fault-tolerant consensus protocol can deterministically terminate in a purely asynchronous model.
+
+                // do not check states where a server's term has exceeded the maximum one
+                ams.actor_states.iter().all(|state| state.current_term <= cfg.max_term)
+            })
             .property(Expectation::Always, "Election safety", |_, ams| {
                 ams.actor_states
                     .iter()
@@ -32,10 +44,12 @@ impl RaftModelCfg {
                     .all_unique()
             })
             .property(Expectation::Eventually, "A leader is elected", |am, ams| {
+                // issues/flp.png shows an counterexample to this property where a server's term reaches the maximum (6) but no leader is elected.
+                // Such counterexamples happen because stateright can indefinitely prevent servers from electing a leader by repeatedly timing out candidates.
+                // To prevent stateright from reporting such counterexamples, we always return true when a server's term reaches the maximum but no leader is elected.
                 let has_leader = ams.actor_states.iter().find(|&state| matches!(state.state, State::Leader)).is_some();
-                let reached_max_term = ams.actor_states.iter().any(|state| state.current_term == am.cfg.max_term);
-                has_leader || reached_max_term
+                let has_reached_max_term = ams.actor_states.iter().any(|state| state.current_term == am.cfg.max_term);
+                has_leader || has_reached_max_term
             })
-            .within_boundary(|cfg, ams| ams.actor_states.iter().all(|state| state.current_term <= cfg.max_term))
     }
 }
