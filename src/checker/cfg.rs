@@ -1,3 +1,6 @@
+use std::fmt::{Display, Formatter};
+use std::sync::{Arc, Mutex};
+
 use itertools::Itertools;
 use stateright::actor::{model_peers, Actor, ActorModel, LossyNetwork, Network};
 use stateright::Expectation;
@@ -13,6 +16,33 @@ pub struct RaftModelCfg {
     pub lossy_network: LossyNetwork,
     pub max_term: Term,
     pub max_consecutive_timeouts: usize,
+    pub stats: Arc<Mutex<Stats>>,
+}
+
+#[derive(Clone)]
+pub struct Stats {
+    /// Counts the number of times that the condition evaluates to true
+    pub n_has_leader: usize,
+    /// Counts the number of times that the condition evaluates to true
+    pub n_max_term: usize,
+    /// Counts the number of times that the condition evaluates to true
+    pub n_max_consecutive_timeouts: usize,
+}
+
+impl Display for Stats {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "has leader: {},\nmax term: {},\nmax consecutive timeouts: {}",
+            self.n_has_leader, self.n_max_term, self.n_max_consecutive_timeouts
+        )
+    }
+}
+
+impl Default for Stats {
+    fn default() -> Self {
+        Stats { n_has_leader: 0, n_max_term: 0, n_max_consecutive_timeouts: 0 }
+    }
 }
 
 impl RaftModelCfg {
@@ -72,6 +102,16 @@ impl RaftModelCfg {
                         State::Leader(leader) => leader.n_consecutive_timeouts,
                     })
                     .any(|n_timeouts| n_timeouts == am.cfg.max_consecutive_timeouts);
+
+                // update statistics
+                if has_leader {
+                    am.cfg.stats.lock().unwrap().n_has_leader += 1;
+                } else if max_term_reached {
+                    am.cfg.stats.lock().unwrap().n_max_term += 1;
+                } else if max_consecutive_timeouts_reached {
+                    am.cfg.stats.lock().unwrap().n_max_consecutive_timeouts += 1;
+                }
+
                 has_leader || max_term_reached || max_consecutive_timeouts_reached
             })
     }

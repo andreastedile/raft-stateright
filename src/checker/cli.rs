@@ -1,8 +1,9 @@
-use clap::{Args, Parser, Subcommand, ValueEnum};
-use stateright::actor::{ActorModel, LossyNetwork, Network};
+use std::sync::{Arc, Mutex};
 
-use crate::checker::cfg::RaftModelCfg;
-use crate::server::RaftServer;
+use clap::{Args, Parser, Subcommand, ValueEnum};
+use stateright::actor::{LossyNetwork, Network};
+
+use crate::checker::cfg::{RaftModelCfg, Stats};
 use crate::types::Term;
 
 #[derive(Parser)]
@@ -45,7 +46,7 @@ enum NetworkArg {
 }
 
 impl CommandArgs {
-    pub fn into_model(self) -> ActorModel<RaftServer, RaftModelCfg, ()> {
+    pub fn into_cfg(self) -> RaftModelCfg {
         RaftModelCfg {
             server_count: self.server_count,
             network: match self.network {
@@ -56,7 +57,7 @@ impl CommandArgs {
             lossy_network: if self.lossy_network { LossyNetwork::Yes } else { LossyNetwork::No },
             max_term: self.max_term,
             max_consecutive_timeouts: self.max_consecutive_timeouts,
+            stats: Arc::new(Mutex::new(Stats::default())),
         }
-        .into_model()
     }
 }
