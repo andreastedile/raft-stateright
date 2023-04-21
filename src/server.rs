@@ -20,8 +20,6 @@ impl Actor for RaftServer {
     type State = RaftState;
 
     fn on_start(&self, id: Id, o: &mut Out<Self>) -> Self::State {
-        println!("{} starting", id);
-
         if self.peers.is_empty() {
             RaftState { current_term: 0, voted_for: Some(id), state: State::Leader }
         } else {
