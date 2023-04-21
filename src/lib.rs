@@ -14,7 +14,7 @@ mod tests {
     use stateright::{Expectation, Model};
 
     use crate::server::RaftServer;
-    use crate::state::State;
+    use crate::state::RaftState;
 
     #[derive(Clone)]
     pub struct RaftModelCfg {
@@ -36,12 +36,12 @@ mod tests {
                 .property(Expectation::Always, "Election safety", |_, ams| {
                     ams.actor_states
                         .iter()
-                        .filter(|&state| matches!(state.state, State::Leader))
-                        .map(|state| state.current_term)
+                        .filter(|&state| matches!(state.as_ref(), RaftState::Leader { .. }))
+                        .map(|state| state.current_term())
                         .all_unique()
                 })
                 .property(Expectation::Eventually, "A leader is elected", |_, ams| {
-                    ams.actor_states.iter().find(|&state| matches!(state.state, State::Leader)).is_some()
+                    ams.actor_states.iter().find(|&state| matches!(state.as_ref(), RaftState::Leader { .. })).is_some()
                 })
         }
     }

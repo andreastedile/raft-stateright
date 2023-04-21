@@ -1,33 +1,29 @@
 use stateright::actor::Id;
+use stateright::util::HashableHashSet;
 
 use crate::types::Term;
 
 #[derive(Clone, Debug, PartialEq, Hash)]
-pub struct RaftState {
-    pub current_term: Term,
-    pub voted_for: Option<Id>,
-    pub state: State,
+pub enum RaftState {
+    Follower { current_term: Term, voted_for: Option<Id> },
+    Candidate { current_term: Term, voted_for: Option<Id>, votes: HashableHashSet<Id> },
+    Leader { current_term: Term, voted_for: Option<Id> },
 }
 
-#[derive(Clone, Debug, PartialEq, Hash)]
-pub enum State {
-    Follower,
-    Candidate(candidate_state::State),
-    Leader,
-}
-
-pub mod candidate_state {
-    use stateright::actor::Id;
-    use stateright::util::HashableHashSet;
-
-    #[derive(Clone, Debug, PartialEq, Hash)]
-    pub struct State {
-        pub votes: HashableHashSet<Id>,
+impl RaftState {
+    pub fn current_term(&self) -> Term {
+        match self {
+            RaftState::Follower { current_term, .. } => *current_term,
+            RaftState::Candidate { current_term, .. } => *current_term,
+            RaftState::Leader { current_term, .. } => *current_term,
+        }
     }
 
-    impl Default for State {
-        fn default() -> Self {
-            State { votes: Default::default() }
+    pub fn voted_for(&self) -> Option<Id> {
+        match self {
+            RaftState::Follower { voted_for, .. } => *voted_for,
+            RaftState::Candidate { voted_for, .. } => *voted_for,
+            RaftState::Leader { voted_for, .. } => *voted_for,
         }
     }
 }

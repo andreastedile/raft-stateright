@@ -4,7 +4,7 @@ use stateright::actor::{Actor, Id, Out};
 
 use crate::config::RaftConfig;
 use crate::messages::RaftMsg;
-use crate::state::{RaftState, State};
+use crate::state::RaftState;
 use crate::timers::RaftTimer;
 
 #[derive(Debug)]
@@ -23,11 +23,11 @@ impl Actor for RaftServer {
         println!("{} starting", id);
 
         if self.peers.is_empty() {
-            RaftState { current_term: 0, voted_for: Some(id), state: State::Leader }
+            RaftState::Leader { current_term: 0, voted_for: Some(id) }
         } else {
             o.set_timer(RaftTimer::Election, self.config.election_timeout.clone());
 
-            RaftState { current_term: 0, voted_for: None, state: State::Follower }
+            RaftState::Follower { current_term: 0, voted_for: None }
         }
     }
 
