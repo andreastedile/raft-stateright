@@ -1,9 +1,10 @@
 use std::borrow::Cow;
+
 use stateright::actor::{majority, Id, Out};
 
 use crate::messages::{append_entries, request_vote, RaftMsg};
 use crate::server::RaftServer;
-use crate::state::{candidate_state, RaftState, State};
+use crate::state::{candidate_state, leader_state, RaftState, State};
 use crate::timers::RaftTimer;
 
 impl RaftServer {
@@ -25,6 +26,7 @@ impl RaftServer {
             State::Candidate(candidate) => {
                 state.current_term += 1;
                 candidate.votes.clear();
+                candidate.n_consecutive_timeouts += 1;
 
                 let req = request_vote::Request { term: state.current_term };
                 let req = RaftMsg::RequestVoteReq(req);
@@ -32,7 +34,7 @@ impl RaftServer {
 
                 o.set_timer(RaftTimer::Election, self.config.election_timeout.clone());
             }
-            State::Leader => unreachable!(),
+            State::Leader(_) => unreachable!(),
         }
     }
 
@@ -84,7 +86,7 @@ impl RaftServer {
                     if n_granted >= majority(self.peers.len() + 1) {
                         o.cancel_timer(RaftTimer::Election);
 
-                        state.state = State::Leader;
+                        state.state = State::Leader(leader_state::State::default());
 
                         let req = append_entries::Request { term: state.current_term };
                         let req = RaftMsg::AppendEntriesReq(req);

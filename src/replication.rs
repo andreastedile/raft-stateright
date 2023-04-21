@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+
 use stateright::actor::{Id, Out};
 
 use crate::messages::{append_entries, RaftMsg};
@@ -11,10 +12,14 @@ impl RaftServer {
         match state.state {
             State::Follower => unreachable!(),
             State::Candidate(_) => unreachable!(),
-            State::Leader => {
+            State::Leader(_) => {
                 let req = append_entries::Request { term: state.current_term };
                 let req = RaftMsg::AppendEntriesReq(req);
                 o.broadcast(&self.peers, &req);
+
+                if let State::Leader(leader) = &mut state.to_mut().state {
+                    leader.n_consecutive_timeouts += 1;
+                }
 
                 o.set_timer(RaftTimer::Heartbeat, self.config.heartbeat_period..self.config.heartbeat_period);
             }
@@ -51,7 +56,7 @@ impl RaftServer {
 
         if res.term < state.current_term {
             // stale response
-        } else if let State::Leader = state.state {
+        } else if let State::Leader(_) = state.state {
             //
         }
     }

@@ -13,7 +13,7 @@ pub struct RaftState {
 pub enum State {
     Follower,
     Candidate(candidate_state::State),
-    Leader,
+    Leader(leader_state::State),
 }
 
 pub mod candidate_state {
@@ -23,11 +23,25 @@ pub mod candidate_state {
     #[derive(Clone, Debug, PartialEq, Hash)]
     pub struct State {
         pub votes: HashableHashSet<Id>,
+        pub n_consecutive_timeouts: usize,
     }
 
     impl Default for State {
         fn default() -> Self {
-            State { votes: Default::default() }
+            State { votes: Default::default(), n_consecutive_timeouts: 0 }
+        }
+    }
+}
+
+pub mod leader_state {
+    #[derive(Clone, Debug, PartialEq, Hash)]
+    pub struct State {
+        pub n_consecutive_timeouts: usize,
+    }
+
+    impl Default for State {
+        fn default() -> Self {
+            State { n_consecutive_timeouts: 0 }
         }
     }
 }

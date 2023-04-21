@@ -13,7 +13,6 @@ pub struct Cli {
     pub command: Commands,
 }
 
-
 #[derive(Subcommand)]
 pub enum Commands {
     Explore(CommandArgs),
@@ -33,6 +32,9 @@ pub struct CommandArgs {
 
     #[arg(long)]
     max_term: Term,
+
+    #[arg(long)]
+    max_consecutive_timeouts: usize,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -53,6 +55,7 @@ impl CommandArgs {
             },
             lossy_network: if self.lossy_network { LossyNetwork::Yes } else { LossyNetwork::No },
             max_term: self.max_term,
+            max_consecutive_timeouts: self.max_consecutive_timeouts,
         }
         .into_model()
     }

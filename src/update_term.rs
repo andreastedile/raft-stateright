@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+
 use stateright::actor::Out;
 
 use crate::server::RaftServer;
@@ -21,7 +22,7 @@ impl RaftServer {
                     o.cancel_timer(RaftTimer::Election);
                     state.state = State::Follower;
                 }
-                State::Leader => {
+                State::Leader(_) => {
                     o.cancel_timer(RaftTimer::Heartbeat);
                     state.state = State::Follower;
                 }
