@@ -13,7 +13,6 @@ pub struct Cli {
     pub command: Commands,
 }
 
-
 #[derive(Subcommand)]
 pub enum Commands {
     Explore(CommandArgs),
@@ -33,6 +32,9 @@ pub struct CommandArgs {
 
     #[arg(long)]
     max_term: Term,
+
+    #[arg(long)]
+    max_crashes: usize,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -44,6 +46,14 @@ enum NetworkArg {
 
 impl CommandArgs {
     pub fn into_model(self) -> ActorModel<RaftServer, RaftModelCfg, ()> {
+        if self.server_count < 2 * self.max_crashes + 1 {
+            panic!(
+                "max crashes is {}, but server count is {} (should be >= {})",
+                self.max_crashes,
+                self.server_count,
+                2 * self.max_crashes + 1
+            );
+        }
         RaftModelCfg {
             server_count: self.server_count,
             network: match self.network {
@@ -53,6 +63,7 @@ impl CommandArgs {
             },
             lossy_network: if self.lossy_network { LossyNetwork::Yes } else { LossyNetwork::No },
             max_term: self.max_term,
+            max_crashes: self.max_crashes,
         }
         .into_model()
     }

@@ -12,6 +12,7 @@ pub struct RaftModelCfg {
     pub network: Network<<RaftServer as Actor>::Msg>,
     pub lossy_network: LossyNetwork,
     pub max_term: Term,
+    pub max_crashes: usize,
 }
 
 impl RaftModelCfg {
@@ -24,6 +25,7 @@ impl RaftModelCfg {
             }))
             .init_network(self.network)
             .lossy_network(self.lossy_network)
+            .max_crashes(self.max_crashes)
             .within_boundary(|cfg, ams| {
                 // Stateright can make actors timeout an unbounded amount of times.
                 // For example, it can indefinitely prevent servers from electing a leader by repeatedly timing out candidates.
