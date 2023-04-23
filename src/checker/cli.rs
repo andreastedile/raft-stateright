@@ -1,8 +1,9 @@
-use clap::{Args, Parser, Subcommand, ValueEnum};
-use stateright::actor::{ActorModel, LossyNetwork, Network};
+use std::sync::{Arc, Mutex};
 
-use crate::checker::cfg::RaftModelCfg;
-use crate::server::RaftServer;
+use clap::{Args, Parser, Subcommand, ValueEnum};
+use stateright::actor::{LossyNetwork, Network};
+
+use crate::checker::cfg::{RaftModelCfg, Stats};
 use crate::types::Term;
 
 #[derive(Parser)]
@@ -35,6 +36,9 @@ pub struct CommandArgs {
 
     #[arg(long)]
     max_crashes: usize,
+
+    #[arg(long)]
+    max_consecutive_timeouts: usize,
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, ValueEnum)]
@@ -45,7 +49,7 @@ enum NetworkArg {
 }
 
 impl CommandArgs {
-    pub fn into_model(self) -> ActorModel<RaftServer, RaftModelCfg, ()> {
+    pub fn into_cfg(self) -> RaftModelCfg {
         if self.server_count < 2 * self.max_crashes + 1 {
             panic!(
                 "max crashes is {}, but server count is {} (should be >= {})",
@@ -64,7 +68,8 @@ impl CommandArgs {
             lossy_network: if self.lossy_network { LossyNetwork::Yes } else { LossyNetwork::No },
             max_term: self.max_term,
             max_crashes: self.max_crashes,
+            max_consecutive_timeouts: self.max_consecutive_timeouts,
+            stats: Arc::new(Mutex::new(Stats::default())),
         }
-        .into_model()
     }
 }
